@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automatic Canvas-Only Sharing</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        #controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+        }
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #myCanvas {
+            border: 1px solid black;
+        }
+        #status {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <button id="toggleDrawing">Pause Drawing</button>
+        <button id="toggleSharing">Stop Sharing</button>
+    </div>
+    <div id="canvas-container">
+        <canvas id="myCanvas" width="800" height="600"></canvas>
+    </div>
+    <div id="status">Canvas is being shared</div>
+
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+        const toggleDrawingBtn = document.getElementById('toggleDrawing');
+        const toggleSharingBtn = document.getElementById('toggleSharing');
+        const status = document.getElementById('status');
+        let isDrawing = true;
+        let isSharing = false;
+        let pipWindow = null;
+
+        function draw() {
+            if (!isDrawing) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.arc(
+                canvas.width / 2 + Math.cos(Date.now() / 1000) * 100,
+                canvas.height / 2 + Math.sin(Date.now() / 1000) * 100,
+                50, 0, 2 * Math.PI
+            );
+            ctx.fillStyle = 'blue';
+            ctx.fill();
+            requestAnimationFrame(draw);
+        }
+
+        function toggleDrawing() {
+            isDrawing = !isDrawing;
+            toggleDrawingBtn.textContent = isDrawing ? 'Pause Drawing' : 'Resume Drawing';
+            if (isDrawing) draw();
+        }
+
+        async function startSharing() {
+            if (isSharing) return;
+
+            try {
+                const video = document.createElement('video');
+                video.srcObject = canvas.captureStream();
+                video.autoplay = true;
+
+                await video.play();
+                pipWindow = await video.requestPictureInPicture();
+
+                isSharing = true;
+                status.textContent = 'Canvas is being shared (PiP active)';
+                toggleSharingBtn.textContent = 'Stop Sharing';
+            } catch (error) {
+                console.error('Error starting share:', error);
+                status.textContent = 'Failed to start sharing';
+            }
+        }
+
+        function stopSharing() {
+            if (!isSharing) return;
+
+            if (pipWindow) {
+                pipWindow.close();
+                pipWindow = null;
+            }
+
+            isSharing = false;
+            status.textContent = 'Canvas is not being shared';
+            toggleSharingBtn.textContent = 'Start Sharing';
+        }
+
+        function toggleSharing() {
+            if (isSharing) {
+                stopSharing();
+            } else {
+                startSharing();
+            }
+        }
+
+        draw();
+        startSharing();
+
+        toggleDrawingBtn.addEventListener('click', toggleDrawing);
+        toggleSharingBtn.addEventListener('click', toggleSharing);
+
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            const containerAspectRatio = container.clientWidth / container.clientHeight;
+            const canvasAspectRatio = canvas.width / canvas.height;
+
+            if (containerAspectRatio > canvasAspectRatio) {
+                canvas.style.height = '100%';
+                canvas.style.width = 'auto';
+            } else {
+                canvas.style.width = '100%';
+                canvas.style.height = 'auto';
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+    </script>
+</body>
+</html>
