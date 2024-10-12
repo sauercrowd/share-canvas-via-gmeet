@@ -44,7 +44,7 @@
 <body>
     <div id="controls">
         <button id="toggleDrawing">Pause Drawing</button>
-        <button id="toggleSharing">Stop Sharing</button>
+        <button id="toggleSharing">Enable PIP</button>
     </div>
     <div id="canvas-container">
         <canvas id="myCanvas" width="800" height="600"></canvas>
@@ -94,7 +94,7 @@
 
                 isSharing = true;
                 status.textContent = 'Canvas is being shared (PiP active)';
-                toggleSharingBtn.textContent = 'Stop Sharing';
+                toggleSharingBtn.textContent = 'Disable PIP';
             } catch (error) {
                 console.error('Error starting share:', error);
                 status.textContent = 'Failed to start sharing';
@@ -111,7 +111,7 @@
 
             isSharing = false;
             status.textContent = 'Canvas is not being shared';
-            toggleSharingBtn.textContent = 'Start Sharing';
+            toggleSharingBtn.textContent = 'Enable PIP';
         }
 
         function toggleSharing() {
